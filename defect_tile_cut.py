@@ -9,7 +9,17 @@ Created on Tue Dec 20 13:04:18 2022
 the CSV file contains annotations for defects. The annotations are in the form of bounding boxes, which are described by the x and y coordinates of the top-left corner of the box, as well as its width and height. The bounding boxes correspond to the locations of the defects within the scanned image.
 """
 
+OPENSLIDE_PATH = r'C:\\Users\\nrcha\\OneDrive\\Documents\\merge\\openslide-win64-20230414\\o\\bin'
 
+import os
+if hasattr(os, 'add_dll_directory'):
+    # Python >= 3.8 on Windows
+    with os.add_dll_directory(OPENSLIDE_PATH):
+        import openslide, large_image_source_openslide
+else:
+    import openslide, large_image_source_openslide
+
+import tifftools
 import large_image
 import os
 from tifffile import imsave
@@ -18,15 +28,6 @@ import pandas as pd
 import random
 import xml.etree.ElementTree as ET
 
-OPENSLIDE_PATH = r'C:\\Users\\nrcha\\OneDrive\\Documents\\merge\\openslide-win64-20230414\\o\\bin'
-
-import os
-if hasattr(os, 'add_dll_directory'):
-    # Python >= 3.8 on Windows
-    with os.add_dll_directory(OPENSLIDE_PATH):
-        import openslide
-else:
-    import openslide
 
 def get_lnb(xml_path, nm_p=221):
     """

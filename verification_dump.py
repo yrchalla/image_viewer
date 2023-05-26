@@ -4,6 +4,17 @@ Created on Mon May  8 13:05:08 2023
 @author: Lucid
 """
 
+OPENSLIDE_PATH = r'C:\\Users\\nrcha\\OneDrive\\Documents\\merge\\openslide-win64-20230414\\o\\bin'
+
+import os
+if hasattr(os, 'add_dll_directory'):
+    # Python >= 3.8 on Windows
+    with os.add_dll_directory(OPENSLIDE_PATH):
+        import openslide, large_image_source_openslide
+else:
+    import openslide, large_image_source_openslide
+
+import tifftools
 import xml.etree.ElementTree as ET
 import large_image
 import os
@@ -15,9 +26,9 @@ import pandas as pd
 from tifffile import imread, imsave
 from defect_tile_cut import get_lnb, update_SameTile_annotations, tile_intersection
 from math import sqrt
+from PIL import Image
 
 import large_image
-import openslide
 
 
 def plot_one_box(x, img, color=None, label=None, line_thickness=4):
@@ -557,9 +568,9 @@ def get_np_predicts(folder, filename, tile_size=512, nm_p=221):
 
     # get tile source
 
-    ts = large_image.getTileSource(wsi_path)
+    # ts = large_image.getTileSource(wsi_path)
     slide = openslide.open_slide(wsi_path)
-    dims = slide.dimensions
+    # dims = slide.dimensions
     # print(dims)
 
     # initialize
@@ -607,11 +618,10 @@ def get_np_predicts(folder, filename, tile_size=512, nm_p=221):
         tile_anote = update_SameTile_annotes(
             predict_list, tile_box, tile_anote)
 
-        im_roi, _ = ts.getRegion(
-            region=dict(left=left, top=top, width=tile_size,
-                        height=tile_size, units='base_pixels'),
-            scale=dict(magnification=40),
-            format=large_image.tilesource.TILE_FORMAT_PIL)
+        level = slide.get_best_level_for_downsample(1.0 / 40)
+        im_roi = slide.read_region((left, top), level, (tile_size, tile_size))
+        
+        # im_roi = im_roi.convert("RGB")
 
         # print(im_roi.shape)
         file = im_roi.convert('RGB')
