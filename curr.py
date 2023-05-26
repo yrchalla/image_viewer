@@ -137,7 +137,7 @@ class MainWindow(QMainWindow):
 
         # Display the images in the specified folder
         self.folderPath = settings.value("last_value", "/")
-        if not os.path.isfile(self.folderPath):
+        if not (os.path.isfile(self.folderPath) and self.folderPath.endswith(".ndpi")):
             print(settings.value("last_value", "/"))
             self.folderPath = str(QFileDialog.getOpenFileName(self, "Select ndpi file", QDir.homePath())[0])
             settings.setValue("last_value", self.folderPath)
