@@ -15,11 +15,10 @@ import os
 if hasattr(os, 'add_dll_directory'):
     # Python >= 3.8 on Windows
     with os.add_dll_directory(OPENSLIDE_PATH):
-        import openslide, large_image_source_openslide
+        import openslide
 else:
-    import openslide, large_image_source_openslide
+    import openslide
 
-import tifftools
 import large_image
 import os
 from tifffile import imsave
