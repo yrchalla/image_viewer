@@ -1,3 +1,37 @@
+import requests
+import os, sys
+import zipfile
+
+if getattr(sys, 'frozen', False):
+    # The application is running as a bundled executable
+    current_dir = os.path.dirname(sys.executable)
+else:
+    # The application is running as a script
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+
+print(current_dir)
+if not os.path.isdir(os.path.join(current_dir, "openslide-win64-20230414")):
+    url = "https://github.com/openslide/openslide-winbuild/releases/download/v20230414/openslide-win64-20230414.zip"
+    filename = "openslide-win64-20230414.zip"
+
+    # Send a GET request to the URL and stream the response
+    response = requests.get(url, stream=True)
+
+    # Check if the request was successful
+    if response.status_code == 200:
+        with open(os.path.join(current_dir, filename), "wb") as file:
+            # Iterate over the response content in chunks and write to file
+            for chunk in response.iter_content(chunk_size=4096):
+                file.write(chunk)
+        print(f"Download completed: {filename}")
+    else:
+        print("Failed to download the file.")
+    with zipfile.ZipFile(os.path.join(current_dir, 'openslide-win64-20230414.zip'), 'r') as zip:
+        zip.extractall(current_dir)
+
+
+
+
 from PyQt6.QtWidgets import (
     QMainWindow,
     QWidget,
@@ -24,7 +58,6 @@ from PyQt6.QtGui import QColor
 from PyQt6.QtCore import QSize
 from PyQt6.QtCore import QSettings
 from verification_dump import get_np_predicts
-
 
 
 class MainWindow(QMainWindow):

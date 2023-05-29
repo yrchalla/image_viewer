@@ -3,10 +3,16 @@
 Created on Mon May  8 13:05:08 2023
 @author: Lucid
 """
+import os, sys
 
-OPENSLIDE_PATH = r'C:\\Users\\nrcha\\OneDrive\\Documents\\merge\\openslide-win64-20230414\\o\\bin'
+if getattr(sys, 'frozen', False):
+    # The application is running as a bundled executable
+    current_dir = os.path.dirname(sys.executable)
+else:
+    # The application is running as a script
+    current_dir = os.path.dirname(os.path.abspath(__file__))
 
-import os
+OPENSLIDE_PATH = os.path.join(current_dir, 'openslide-win64-20230414', 'bin')
 if hasattr(os, 'add_dll_directory'):
     # Python >= 3.8 on Windows
     with os.add_dll_directory(OPENSLIDE_PATH):

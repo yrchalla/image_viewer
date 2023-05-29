@@ -8,10 +8,18 @@ Created on Tue Dec 20 13:04:18 2022
 """
 the CSV file contains annotations for defects. The annotations are in the form of bounding boxes, which are described by the x and y coordinates of the top-left corner of the box, as well as its width and height. The bounding boxes correspond to the locations of the defects within the scanned image.
 """
+import os, sys
 
-OPENSLIDE_PATH = r'C:\\Users\\nrcha\\OneDrive\\Documents\\merge\\openslide-win64-20230414\\o\\bin'
+# current_dir = os.path.dirname(os.path.abspath(__file__))
 
-import os
+if getattr(sys, 'frozen', False):
+    # The application is running as a bundled executable
+    current_dir = os.path.dirname(sys.executable)
+else:
+    # The application is running as a script
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+
+OPENSLIDE_PATH = os.path.join(current_dir, 'openslide-win64-20230414', 'bin')
 if hasattr(os, 'add_dll_directory'):
     # Python >= 3.8 on Windows
     with os.add_dll_directory(OPENSLIDE_PATH):
