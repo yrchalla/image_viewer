@@ -34,6 +34,7 @@ if not os.path.isdir(os.path.join(current_dir, "openslide-win64-20230414")):
 
 from PyQt6.QtWidgets import (
     QMainWindow,
+    QMessageBox,
     QWidget,
     QScrollArea,
     QGridLayout,
@@ -78,6 +79,13 @@ class MainWindow(QMainWindow):
         openAction.triggered.connect(self.onOpenActionTriggered)
         fileMenu.addAction(openAction)
 
+        helpMenu = menuBar.addMenu("&Help")
+
+        # Add an "Open" action to the "File" menu
+        aboutAction = QAction("&About", self)
+        aboutAction.triggered.connect(self.onAboutActionTriggered)
+        helpMenu.addAction(aboutAction)
+
         # Add a "View" menu
         viewMenu = menuBar.addMenu("&View")
 
@@ -121,7 +129,7 @@ class MainWindow(QMainWindow):
         self.backButton.triggered.connect(self.onBackButtonClicked)
 
         self.nRows = 3
-        self.nCols = 5
+        self.nCols = 6
 
         # Add the next button to the toolbar
         # nextIcon = QIcon.fromTheme("go-next")
@@ -174,6 +182,15 @@ class MainWindow(QMainWindow):
             print(settings.value("last_value", "/"))
             self.folderPath = str(QFileDialog.getOpenFileName(self, "Select ndpi file", QDir.homePath())[0])
             settings.setValue("last_value", self.folderPath)
+        if not os.path.isfile(self.folderPath[:-5]+"_fp.txt"):
+            with open(self.folderPath[:-5]+"_fp.txt", 'w') as _:
+                pass
+        # read into set
+        with open(self.folderPath[:-5]+"_fp.txt", 'r') as file:
+            for line in file:
+                self.falsePositives.add(int(line.strip()))  # Remove newline character and add line to set
+
+
 
         self.setWindowTitle(self.folderPath)
         self.tile_list, self.id_list = get_np_predicts(self.folderPath[:self.folderPath.rfind('\\')], self.folderPath.split('\\')[-1].split('.')[0])
@@ -337,12 +354,27 @@ class MainWindow(QMainWindow):
         text, ok = QInputDialog.getText(self, "Input Dialog", "Change page afterward for effects to take place. Enter the resolution:")
         if ok and text != '':
             self.res = int(text)
+
+    def save(self):
+        open(self.folderPath[:-5]+"_fp.txt", 'w').close()
+        # clear and write line by line
+        with open(self.folderPath[:-5]+"_fp.txt", 'w') as file:
+            for line in self.falsePositives:
+                file.write(str(line) + '\n')  # Write line to file with a newline character
     
     def onOpenActionTriggered(self):
         width = self.width()
         height = self.height()
         folderPath = str(QFileDialog.getOpenFileName(self, "Select ndpi file", QDir.homePath())[0])
         if folderPath:
+            self.falsePositives = set()
+            if not os.path.isfile(self.folderPath[:-5]+"_fp.txt"):
+                with open(self.folderPath[:-5]+"_fp.txt", 'w') as _:
+                    pass
+            # read into set
+            with open(self.folderPath[:-5]+"_fp.txt", 'r') as file:
+                for line in file:
+                    self.falsePositives.add(int(line.strip()))  # Remove newline character and add line to set
             self.setWindowTitle(folderPath)
             settings.setValue("last_value", folderPath)
             self.folderPath = folderPath
@@ -404,9 +436,11 @@ class MainWindow(QMainWindow):
         if index+self.currPage*self.nRows*self.nCols not in self.falsePositives:
             widget.setStyleSheet("border: 4px solid red;")
             self.falsePositives.add(index+self.currPage*self.nRows*self.nCols)
+            self.save()
         else:
             widget.setStyleSheet("border: 4px solid black;")
             self.falsePositives.discard(index+self.currPage*self.nRows*self.nCols)
+            self.save()
     
     def onToggleToolbarActionTriggered(self, checked):
         self.toolbar.setVisible(checked)
@@ -416,6 +450,11 @@ class MainWindow(QMainWindow):
             self.showNormal()
         else:
             self.showFullScreen()
+
+    def onAboutActionTriggered(self):
+        msgBox = QMessageBox()
+        msgBox.setText("Version 1")
+        msgBox.exec()
 
         
 
