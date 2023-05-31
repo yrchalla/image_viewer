@@ -610,8 +610,8 @@ def get_np_predicts(folder, filename, tile_size=512, nm_p=221):
 
         x1, y1 = tile_size/2, tile_size/2
 
-        left = int(cx - x1 - breath/2)
-        top = int(cy - y1 - breath/2)
+        left = int(cx - x1)
+        top = int(cy - y1)
         # print(left,top)
 
         # print(breath,length)
