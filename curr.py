@@ -1,6 +1,8 @@
 import requests
 import os, sys
 import zipfile
+import threading
+import time
 
 if getattr(sys, 'frozen', False):
     # The application is running as a bundled executable
@@ -9,7 +11,6 @@ else:
     # The application is running as a script
     current_dir = os.path.dirname(os.path.abspath(__file__))
 
-print(current_dir)
 if not os.path.isdir(os.path.join(current_dir, "openslide-win64-20230414")):
     url = "https://github.com/openslide/openslide-winbuild/releases/download/v20230414/openslide-win64-20230414.zip"
     filename = "openslide-win64-20230414.zip"
@@ -56,7 +57,7 @@ from PyQt6.QtGui import QAction
 from PyQt6.QtGui import QColor
 from PyQt6.QtCore import QSize
 from PyQt6.QtCore import QSettings
-from verification_dump import get_np_predicts
+from verification_dump import get_np_predicts, count_predicts
 
 
 class MainWindow(QMainWindow):
@@ -177,7 +178,6 @@ class MainWindow(QMainWindow):
         # Display the images in the specified folder
         self.folderPath = settings.value("last_value", "/")
         if not (os.path.isfile(self.folderPath) and self.folderPath.endswith(".ndpi")):
-            print(settings.value("last_value", "/"))
             self.folderPath = str(QFileDialog.getOpenFileName(self, "Select ndpi file", QDir.homePath())[0])
             settings.setValue("last_value", self.folderPath)
         if not os.path.isfile(self.folderPath[:-5]+"_fp.txt"):
@@ -191,8 +191,12 @@ class MainWindow(QMainWindow):
 
 
         self.setWindowTitle(self.folderPath)
-        self.tile_list, self.id_list = get_np_predicts(self.folderPath[:self.folderPath.rfind('\\')], self.folderPath.split('\\')[-1].split('.')[0])
-        self.numImages = len(self.tile_list)
+        # self.tile_list, self.id_list = get_np_predicts(self.folderPath[:self.folderPath.rfind('\\')], self.folderPath.split('\\')[-1].split('.')[0])
+        self.tile_list = []
+        thread = threading.Thread(target=get_np_predicts, args=(self.folderPath[:self.folderPath.rfind('\\')], self.folderPath.split('\\')[-1].split('.')[0], self.tile_list))
+        thread.start()
+        # get_np_predicts(self.folderPath[:self.folderPath.rfind('\\')], self.folderPath.split('\\')[-1].split('.')[0], self.tile_list)
+        self.numImages = count_predicts(self.folderPath[:self.folderPath.rfind('\\')], self.folderPath.split('\\')[-1].split('.')[0])
         self.maxPage = (self.numImages - 1) // (self.nRows * self.nCols)
         # Create the label for the page number
         self.pageLabel.setText("Page " + str(self.currPage+1) + "/" + str(self.maxPage+1))
@@ -201,54 +205,42 @@ class MainWindow(QMainWindow):
 
         self.rightShortcut = QShortcut(QKeySequence(Qt.Key.Key_Right), self)
         self.rightShortcut.activated.connect(self.onNextButtonClicked)
-
+        time.sleep(2)
         self.displayImages(0, self.nRows * self.nCols - 1)
 
         # self.showFullScreen()  # <--- add this line to show the window in fullscreen mode
         # self.toolbar.setVisible(False)
 
     def displayImages(self, startIndex: int, endIndex: int) -> None:
-
-
         row = 0
         column = 0
         maxColumns = self.nCols
 
         for i in range(startIndex, endIndex+1):
-            if i >= self.numImages:
-                break
-
-            imageFile = self.tile_list[i]
-            height, width, channel = imageFile.shape
-            bytesPerLine = channel * width
-            qimage = QImage(imageFile.data, width, height, bytesPerLine, QImage.Format.Format_RGB888)
+            if i < len(self.tile_list):
+                imageFile = self.tile_list[i]
+                height, width, channel = imageFile.shape
+                bytesPerLine = channel * width
+                qimage = QImage(imageFile.data, width, height, bytesPerLine, QImage.Format.Format_RGB888)
 
 
-            # Create the label and pixmap for the image
-            imageLabel = QLabel(self)
-            imageLabel.setMaximumSize(self.maxSize)
-            pixmap = QPixmap.fromImage(qimage)
-            pixmap = pixmap.scaledToWidth(self.res)
+                # Create the label and pixmap for the image
+                imageLabel = QLabel(self)
+                imageLabel.setMaximumSize(self.maxSize)
+                pixmap = QPixmap.fromImage(qimage)
+                pixmap = pixmap.scaledToWidth(self.res)
 
-            # Set the pixmap on the label and add it to the grid layout
-            imageLabel.setPixmap(pixmap)
-            imageLabel.setScaledContents(True)  # Ensure pixmap always fills label
-            # Set the size policy of the image label
-            imageLabel.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+                # Set the pixmap on the label and add it to the grid layout
+                imageLabel.setPixmap(pixmap)
+                imageLabel.setScaledContents(True)  # Ensure pixmap always fills label
+                # Set the size policy of the image label
+                imageLabel.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
-            imageLabel.mouseDoubleClickEvent = lambda event, label=imageLabel: self.onImageLabelClicked(label)
+                imageLabel.mouseDoubleClickEvent = lambda event, label=imageLabel: self.onImageLabelClicked(label)
 
-            self.gridLayout.addWidget(imageLabel, row, column)
+                self.gridLayout.addWidget(imageLabel, row, column)
 
-            # Increment the row and column counters
-            column += 1
-            if column == maxColumns:
-                row += 1
-                column = 0
-
-        # Add placeholder images for any empty grid cells
-        while row < self.nRows:
-            while column < maxColumns:
+            else:
                 imageLabel = QLabel(self)
                 placeholderPixmap = QPixmap(100, 100)
                 placeholderPixmap.fill(QColor(200, 200, 200))
@@ -256,9 +248,12 @@ class MainWindow(QMainWindow):
                 imageLabel.setScaledContents(True)
                 imageLabel.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
                 self.gridLayout.addWidget(imageLabel, row, column)
-                column += 1
-            row += 1
-            column = 0
+
+            # Increment the row and column counters
+            column += 1
+            if column == maxColumns:
+                row += 1
+                column = 0
 
         if self.currPage < self.maxPage:
             self.nextButton.setEnabled(True)
@@ -378,8 +373,12 @@ class MainWindow(QMainWindow):
             self.folderPath = folderPath
             self.currPage = 0
             self.setWindowTitle(self.folderPath)
-            self.tile_list, self.id_list = get_np_predicts(self.folderPath[:self.folderPath.rfind('\\')], self.folderPath.split('\\')[-1].split('.')[0])
-            self.numImages = len(self.tile_list)
+            # self.tile_list, self.id_list = get_np_predicts(self.folderPath[:self.folderPath.rfind('\\')], self.folderPath.split('\\')[-1].split('.')[0])
+            self.tile_list = []
+            # get_np_predicts(self.folderPath[:self.folderPath.rfind('\\')], self.folderPath.split('\\')[-1].split('.')[0], self.tile_list)
+            thread = threading.Thread(target=get_np_predicts, args=(self.folderPath[:self.folderPath.rfind('\\')], self.folderPath.split('\\')[-1].split('.')[0], self.tile_list))
+            thread.start()
+            self.numImages = count_predicts(self.folderPath[:self.folderPath.rfind('\\')], self.folderPath.split('\\')[-1].split('.')[0])
             self.maxPage = (self.numImages - 1) // (self.nRows * self.nCols)
             # Create the label for the page number
             self.pageLabel.setText("Page " + str(self.currPage+1) + "/" + str(self.maxPage+1))
@@ -390,6 +389,7 @@ class MainWindow(QMainWindow):
                     widget.deleteLater()
                 del child
                 child = self.gridLayout.takeAt(0)    
+            time.sleep(2)
             self.displayImages(0, self.nRows * self.nCols - 1)
             self.resize(width, height)
 
