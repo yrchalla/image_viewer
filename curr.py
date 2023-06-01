@@ -205,7 +205,7 @@ class MainWindow(QMainWindow):
 
         self.rightShortcut = QShortcut(QKeySequence(Qt.Key.Key_Right), self)
         self.rightShortcut.activated.connect(self.onNextButtonClicked)
-        time.sleep(2)
+        time.sleep(1.5)
         self.displayImages(0, self.nRows * self.nCols - 1)
 
         # self.showFullScreen()  # <--- add this line to show the window in fullscreen mode
@@ -389,7 +389,7 @@ class MainWindow(QMainWindow):
                     widget.deleteLater()
                 del child
                 child = self.gridLayout.takeAt(0)    
-            time.sleep(2)
+            time.sleep(1.5)
             self.displayImages(0, self.nRows * self.nCols - 1)
             self.resize(width, height)
 

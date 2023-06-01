@@ -3,8 +3,39 @@
 Created on Mon May  8 13:05:08 2023
 @author: Lucid
 """
-import os, sys
-import lazy_import
+# import os, sys
+# from lazy_import import lazy_module
+
+# if getattr(sys, 'frozen', False):
+#     # The application is running as a bundled executable
+#     current_dir = os.path.dirname(sys.executable)
+# else:
+#     # The application is running as a script
+#     current_dir = os.path.dirname(os.path.abspath(__file__))
+
+# OPENSLIDE_PATH = os.path.join(current_dir, 'openslide-win64-20230414', 'bin')
+# # if hasattr(os, 'add_dll_directory'):
+# #     # Python >= 3.8 on Windows
+# #     with os.add_dll_directory(OPENSLIDE_PATH):
+# #         openslide = lazy_module("openslide")
+# # else:
+# #     openslide = lazy_module("openslide")
+
+# os.add_dll_directory(OPENSLIDE_PATH)
+# # openslide = lazy_module("openslide")
+# import openslide
+
+# ET =lazy_module("xml.etree.ElementTree")
+# large_image = lazy_module("large_image")
+# np = lazy_module("numpy")
+# random = lazy_module("random")
+# plt = lazy_module("matplotlib.pyplot")
+# cv2 = lazy_module("cv2")
+# pd = lazy_module("pandas")
+# imsave = lazy_module("tifffile.imsave")
+# from defect_tile_cut import get_lnb, update_SameTile_annotations, tile_intersection
+
+import os, sys, time
 
 if getattr(sys, 'frozen', False):
     # The application is running as a bundled executable
@@ -14,27 +45,25 @@ else:
     current_dir = os.path.dirname(os.path.abspath(__file__))
 
 OPENSLIDE_PATH = os.path.join(current_dir, 'openslide-win64-20230414', 'bin')
-# if hasattr(os, 'add_dll_directory'):
-#     # Python >= 3.8 on Windows
-#     with os.add_dll_directory(OPENSLIDE_PATH):
-#         openslide = lazy_import.lazy_module("openslide")
-# else:
-#     openslide = lazy_import.lazy_module("openslide")
+if hasattr(os, 'add_dll_directory'):
+    # Python >= 3.8 on Windows
+    with os.add_dll_directory(OPENSLIDE_PATH):
+        import openslide
+else:
+    import openslide
 
-os.add_dll_directory(OPENSLIDE_PATH)
-# openslide = lazy_import.lazy_module("openslide")
-import openslide
-
-ET = lazy_import.lazy_module("xml.etree.ElementTree")
-large_image = lazy_import.lazy_module("large_image")
-np = lazy_import.lazy_module("numpy")
-random = lazy_import.lazy_module("random")
-plt = lazy_import.lazy_module("matplotlib.pyplot")
-cv2 = lazy_import.lazy_module("cv2")
-pd = lazy_import.lazy_module("pandas")
-imsave = lazy_import.lazy_module("tifffile.imsave")
+import xml.etree.ElementTree as ET
+import large_image
+import os
+import numpy as np
+import random
+import matplotlib.pyplot as plt
+import cv2
+import pandas as pd
+from tifffile import imsave
 from defect_tile_cut import get_lnb, update_SameTile_annotations, tile_intersection
 
+import large_image
 
 def plot_one_box(x, img, color=None, label=None, line_thickness=4):
     # Plots one bounding box on image img
@@ -728,6 +757,8 @@ def get_np_predicts(folder, filename, tile_list, tile_size=512, nm_p=221):
         np_img = write_tile_title(
             np_img, title + '{0}'.format(count), color=(255, 255, 255))
         tile_list.append(np_img)
+        if len(tile_list) % 4 == 0:
+            time.sleep(0)
         count += 1
         # if count > 15 : break
 
