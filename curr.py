@@ -36,10 +36,8 @@ from PyQt6.QtWidgets import (
     QMainWindow,
     QMessageBox,
     QWidget,
-    QScrollArea,
     QGridLayout,
     QLabel,
-    QPushButton,
     QFileDialog,
     QInputDialog,
     QSizePolicy,
@@ -48,8 +46,8 @@ from PyQt6.QtWidgets import (
     QHBoxLayout,
     QSpacerItem,
 )
-from PyQt6.QtGui import QImageReader, QPixmap, QIcon, QKeySequence, QImage
-from PyQt6.QtCore import QDir, Qt, QCoreApplication
+from PyQt6.QtGui import QPixmap, QIcon, QKeySequence, QImage
+from PyQt6.QtCore import QDir, Qt
 from PyQt6.QtGui import QKeySequence, QShortcut
 import sys, os
 from PyQt6.QtWidgets import QApplication, QMainWindow

@@ -4,6 +4,7 @@ Created on Mon May  8 13:05:08 2023
 @author: Lucid
 """
 import os, sys
+import lazy_import
 
 if getattr(sys, 'frozen', False):
     # The application is running as a bundled executable
@@ -13,27 +14,25 @@ else:
     current_dir = os.path.dirname(os.path.abspath(__file__))
 
 OPENSLIDE_PATH = os.path.join(current_dir, 'openslide-win64-20230414', 'bin')
-if hasattr(os, 'add_dll_directory'):
-    # Python >= 3.8 on Windows
-    with os.add_dll_directory(OPENSLIDE_PATH):
-        import openslide
-else:
-    import openslide
+# if hasattr(os, 'add_dll_directory'):
+#     # Python >= 3.8 on Windows
+#     with os.add_dll_directory(OPENSLIDE_PATH):
+#         openslide = lazy_import.lazy_module("openslide")
+# else:
+#     openslide = lazy_import.lazy_module("openslide")
 
-import xml.etree.ElementTree as ET
-import large_image
-import os
-import numpy as np
-import random
-import matplotlib.pyplot as plt
-import cv2
-import pandas as pd
-from tifffile import imread, imsave
+os.add_dll_directory(OPENSLIDE_PATH)
+openslide = lazy_import.lazy_module("openslide")
+
+ET = lazy_import.lazy_module("xml.etree.ElementTree")
+large_image = lazy_import.lazy_module("large_image")
+np = lazy_import.lazy_module("numpy")
+random = lazy_import.lazy_module("random")
+plt = lazy_import.lazy_module("matplotlib.pyplot")
+cv2 = lazy_import.lazy_module("cv2")
+pd = lazy_import.lazy_module("pandas")
+imsave = lazy_import.lazy_module("tifffile.imsave")
 from defect_tile_cut import get_lnb, update_SameTile_annotations, tile_intersection
-from math import sqrt
-from PIL import Image
-
-import large_image
 
 
 def plot_one_box(x, img, color=None, label=None, line_thickness=4):

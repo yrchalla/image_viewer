@@ -8,7 +8,7 @@ Created on Tue Dec 20 13:04:18 2022
 """
 the CSV file contains annotations for defects. The annotations are in the form of bounding boxes, which are described by the x and y coordinates of the top-left corner of the box, as well as its width and height. The bounding boxes correspond to the locations of the defects within the scanned image.
 """
-import os, sys
+import os, sys, lazy_import
 
 # current_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -20,20 +20,15 @@ else:
     current_dir = os.path.dirname(os.path.abspath(__file__))
 
 OPENSLIDE_PATH = os.path.join(current_dir, 'openslide-win64-20230414', 'bin')
-if hasattr(os, 'add_dll_directory'):
-    # Python >= 3.8 on Windows
-    with os.add_dll_directory(OPENSLIDE_PATH):
-        import openslide
-else:
-    import openslide
+os.add_dll_directory(OPENSLIDE_PATH)
+openslide = lazy_import.lazy_module("openslide")
 
-import large_image
-import os
-from tifffile import imsave
-from pascal_voc_writer import Writer
-import pandas as pd
-import random
-import xml.etree.ElementTree as ET
+large_image = lazy_import.lazy_module("large_image")
+imsave = lazy_import.lazy_module("tifffile.imsave")
+Writer = lazy_import.lazy_module("pascal_voc_writer.Writer")
+pd = lazy_import.lazy_module("pandas")
+random = lazy_import.lazy_module("random")
+ET = lazy_import.lazy_module("xml.etree.ElementTree")
 
 
 def get_lnb(xml_path, nm_p=221):
