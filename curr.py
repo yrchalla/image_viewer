@@ -64,6 +64,7 @@ class MainWindow(QMainWindow):
     def __init__(self, settings, parent=None):
 
         super().__init__(parent)
+        self.tile_size = 512
         self.falsePositives = set()
         self.currPage = 0
         self.res = 200
@@ -107,6 +108,10 @@ class MainWindow(QMainWindow):
         setRowsAction = QAction("Set &Rows...", self)
         setRowsAction.triggered.connect(self.onSetRowsActionTriggered)
         settingsMenu.addAction(setRowsAction)
+
+        setSizeAction = QAction("Set &Tile Size...", self)
+        setSizeAction.triggered.connect(self.onSetSizeActionTriggered)
+        settingsMenu.addAction(setSizeAction)
 
         actionsMenu = menuBar.addMenu("&Actions")
         nextAction = QAction("&Next", self)
@@ -193,7 +198,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle(self.folderPath)
         # self.tile_list, self.id_list = get_np_predicts(self.folderPath[:self.folderPath.rfind('\\')], self.folderPath.split('\\')[-1].split('.')[0])
         self.tile_list = []
-        thread = threading.Thread(target=get_np_predicts, args=(self.folderPath[:self.folderPath.rfind('\\')], self.folderPath.split('\\')[-1].split('.')[0], self.tile_list))
+        thread = threading.Thread(target=get_np_predicts, args=(self.folderPath[:self.folderPath.rfind('\\')], self.folderPath.split('\\')[-1].split('.')[0], self.tile_list, self.tile_size))
         thread.start()
         # get_np_predicts(self.folderPath[:self.folderPath.rfind('\\')], self.folderPath.split('\\')[-1].split('.')[0], self.tile_list)
         self.numImages = count_predicts(self.folderPath[:self.folderPath.rfind('\\')], self.folderPath.split('\\')[-1].split('.')[0])
@@ -342,7 +347,29 @@ class MainWindow(QMainWindow):
         self.displayImages(0, self.nRows * self.nCols - 1)
         self.resize(width, height)
 
-    
+    def onSetSizeActionTriggered(self):
+        width = self.width()
+        height = self.height()
+        text, ok = QInputDialog.getText(self, "Input Dialog", "WARNING! The app will flip to the first page. Enter value:")
+        if ok and text != '':
+            self.tile_size = int(text)
+            self.currPage = 0
+            self.pageLabel.setText("Page " + str(self.currPage+1) + "/" + str(self.maxPage+1))
+            child = self.gridLayout.takeAt(0)
+            while child is not None:
+                widget = child.widget()
+                if widget is not None:
+                    widget.deleteLater()
+                del child
+                child = self.gridLayout.takeAt(0)
+            self.tile_list = []
+            # get_np_predicts(self.folderPath[:self.folderPath.rfind('\\')], self.folderPath.split('\\')[-1].split('.')[0], self.tile_list)
+            thread = threading.Thread(target=get_np_predicts, args=(self.folderPath[:self.folderPath.rfind('\\')], self.folderPath.split('\\')[-1].split('.')[0], self.tile_list, self.tile_size))
+            thread.start()
+            time.sleep(1.5)
+            self.displayImages(0, self.nRows * self.nCols - 1)
+            self.resize(width, height)
+
     def onSetResActionTriggered(self):
         text, ok = QInputDialog.getText(self, "Input Dialog", "Change page afterward for effects to take place. Enter the resolution:")
         if ok and text != '':
@@ -376,7 +403,7 @@ class MainWindow(QMainWindow):
             # self.tile_list, self.id_list = get_np_predicts(self.folderPath[:self.folderPath.rfind('\\')], self.folderPath.split('\\')[-1].split('.')[0])
             self.tile_list = []
             # get_np_predicts(self.folderPath[:self.folderPath.rfind('\\')], self.folderPath.split('\\')[-1].split('.')[0], self.tile_list)
-            thread = threading.Thread(target=get_np_predicts, args=(self.folderPath[:self.folderPath.rfind('\\')], self.folderPath.split('\\')[-1].split('.')[0], self.tile_list))
+            thread = threading.Thread(target=get_np_predicts, args=(self.folderPath[:self.folderPath.rfind('\\')], self.folderPath.split('\\')[-1].split('.')[0], self.tile_list, self.tile_size))
             thread.start()
             self.numImages = count_predicts(self.folderPath[:self.folderPath.rfind('\\')], self.folderPath.split('\\')[-1].split('.')[0])
             self.maxPage = (self.numImages - 1) // (self.nRows * self.nCols)
@@ -453,6 +480,8 @@ class MainWindow(QMainWindow):
         msgBox = QMessageBox()
         msgBox.setText("Version 2")
         msgBox.exec()
+
+
 
         
 
