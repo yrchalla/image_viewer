@@ -182,14 +182,14 @@ class MainWindow(QMainWindow):
 
         # Display the images in the specified folder
         self.folderPath = settings.value("last_value", "/")
-        if not (os.path.isfile(self.folderPath) and self.folderPath.endswith(".ndpi")):
+        if not (os.path.isfile(self.folderPath)):
             self.folderPath = str(QFileDialog.getOpenFileName(self, "Select ndpi file", QDir.homePath())[0])
             settings.setValue("last_value", self.folderPath)
-        if not os.path.isfile(self.folderPath[:-5]+"_fp.txt"):
-            with open(self.folderPath[:-5]+"_fp.txt", 'w') as _:
+        if not os.path.isfile(self.folderPath.split('.')[0]+"_fp.txt"):
+            with open(self.folderPath.split('.')[0]+"_fp.txt", 'w') as file:
                 pass
         # read into set
-        with open(self.folderPath[:-5]+"_fp.txt", 'r') as file:
+        with open(self.folderPath.split('.')[0]+"_fp.txt", 'r') as file:
             for line in file:
                 self.falsePositives.add(int(line.strip()))  # Remove newline character and add line to set
 
@@ -198,10 +198,11 @@ class MainWindow(QMainWindow):
         self.setWindowTitle(self.folderPath)
         # self.tile_list, self.id_list = get_np_predicts(self.folderPath[:self.folderPath.rfind('\\')], self.folderPath.split('\\')[-1].split('.')[0])
         self.tile_list = []
-        thread = threading.Thread(target=get_np_predicts, args=(self.folderPath[:self.folderPath.rfind('\\')], self.folderPath.split('\\')[-1].split('.')[0], self.tile_list, self.tile_size))
+        thread = threading.Thread(target=get_np_predicts, args=(self.folderPath[:self.folderPath.rfind('\\')], self.folderPath.
+split('\\')[-1].split('.')[0], self.tile_list, self.folderPath.split('\\')[-1].split('.')[1]))
         thread.start()
         # get_np_predicts(self.folderPath[:self.folderPath.rfind('\\')], self.folderPath.split('\\')[-1].split('.')[0], self.tile_list)
-        self.numImages = count_predicts(self.folderPath[:self.folderPath.rfind('\\')], self.folderPath.split('\\')[-1].split('.')[0])
+        self.numImages = count_predicts(self.folderPath[:self.folderPath.rfind('\\')], self.folderPath.split('\\')[-1].split('.')[0], self.folderPath.split('\\')[-1].split('.')[1])
         self.maxPage = (self.numImages - 1) // (self.nRows * self.nCols)
         # Create the label for the page number
         self.pageLabel.setText("Page " + str(self.currPage+1) + "/" + str(self.maxPage+1))
@@ -364,7 +365,8 @@ class MainWindow(QMainWindow):
                 child = self.gridLayout.takeAt(0)
             self.tile_list = []
             # get_np_predicts(self.folderPath[:self.folderPath.rfind('\\')], self.folderPath.split('\\')[-1].split('.')[0], self.tile_list)
-            thread = threading.Thread(target=get_np_predicts, args=(self.folderPath[:self.folderPath.rfind('\\')], self.folderPath.split('\\')[-1].split('.')[0], self.tile_list, self.tile_size))
+            thread = threading.Thread(target=get_np_predicts, args=(self.folderPath[:self.folderPath.rfind('\\')], self.folderPath.
+split('\\')[-1].split('.')[0], self.tile_list, self.folderPath.split('\\')[-1].split('.')[1]))
             thread.start()
             time.sleep(1.5)
             self.displayImages(0, self.nRows * self.nCols - 1)
@@ -376,9 +378,9 @@ class MainWindow(QMainWindow):
             self.res = int(text)
 
     def save(self):
-        open(self.folderPath[:-5]+"_fp.txt", 'w').close()
+        open(self.folderPath.split('.')[0]+"_fp.txt", 'w').close()
         # clear and write line by line
-        with open(self.folderPath[:-5]+"_fp.txt", 'w') as file:
+        with open(self.folderPath.split('.')[0]+"_fp.txt", 'w') as file:
             for line in self.falsePositives:
                 file.write(str(line) + '\n')  # Write line to file with a newline character
     
@@ -388,11 +390,11 @@ class MainWindow(QMainWindow):
         folderPath = str(QFileDialog.getOpenFileName(self, "Select ndpi file", QDir.homePath())[0])
         if folderPath:
             self.falsePositives = set()
-            if not os.path.isfile(self.folderPath[:-5]+"_fp.txt"):
-                with open(self.folderPath[:-5]+"_fp.txt", 'w') as _:
+            if not os.path.isfile(self.folderPath.split('.')[0]+"_fp.txt"):
+                with open(self.folderPath.split('.')[0]+"_fp.txt", 'w') as _:
                     pass
             # read into set
-            with open(self.folderPath[:-5]+"_fp.txt", 'r') as file:
+            with open(self.folderPath.split('.')[0]+"_fp.txt", 'r') as file:
                 for line in file:
                     self.falsePositives.add(int(line.strip()))  # Remove newline character and add line to set
             self.setWindowTitle(folderPath)
@@ -403,9 +405,10 @@ class MainWindow(QMainWindow):
             # self.tile_list, self.id_list = get_np_predicts(self.folderPath[:self.folderPath.rfind('\\')], self.folderPath.split('\\')[-1].split('.')[0])
             self.tile_list = []
             # get_np_predicts(self.folderPath[:self.folderPath.rfind('\\')], self.folderPath.split('\\')[-1].split('.')[0], self.tile_list)
-            thread = threading.Thread(target=get_np_predicts, args=(self.folderPath[:self.folderPath.rfind('\\')], self.folderPath.split('\\')[-1].split('.')[0], self.tile_list, self.tile_size))
+            thread = threading.Thread(target=get_np_predicts, args=(self.folderPath[:self.folderPath.rfind('\\')], self.folderPath.
+split('\\')[-1].split('.')[0], self.tile_list, self.folderPath.split('\\')[-1].split('.')[1]))
             thread.start()
-            self.numImages = count_predicts(self.folderPath[:self.folderPath.rfind('\\')], self.folderPath.split('\\')[-1].split('.')[0])
+            self.numImages = count_predicts(self.folderPath[:self.folderPath.rfind('\\')], self.folderPath.split('\\')[-1].split('.')[0], self.folderPath.split('\\')[-1].split('.')[1])
             self.maxPage = (self.numImages - 1) // (self.nRows * self.nCols)
             # Create the label for the page number
             self.pageLabel.setText("Page " + str(self.currPage+1) + "/" + str(self.maxPage+1))

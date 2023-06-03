@@ -125,7 +125,7 @@ def get_box_list(wsi_path, xml_path, nm_p):
 
 
 def get_referance(wsi_path, nm_p):
-    slide = openslide.open_slide(wsi_path)
+    slide = slideRead(wsi_path)
 
     w = int(slide.properties.get('openslide.level[0].width'))
     h = int(slide.properties.get('openslide.level[0].height'))
@@ -676,9 +676,9 @@ def get_id_box_list(wsi_path, xml_path, nm_p):
 #         # if count > 15 : break
 #     return tile_list, id_list
 
-def get_np_predicts(folder, filename, tile_list, tile_size=512, nm_p=221):
+def get_np_predicts(folder, filename, tile_list, format, tile_size=512, nm_p=221):
 
-    wsi_path = os.path.join(folder, filename + '.ndpi')
+    wsi_path = os.path.join(folder, filename + '.' + format)
 
     predict_xml_path = os.path.join(folder, filename + '_predicts.xml')
 
@@ -688,7 +688,7 @@ def get_np_predicts(folder, filename, tile_list, tile_size=512, nm_p=221):
     # get tile source
 
     # ts = large_image.getTileSource(wsi_path)
-    slide = openslide.open_slide(wsi_path)
+    slide = slideRead(wsi_path)
     # dims = slide.dimensions
     # print(dims)
 
@@ -762,11 +762,16 @@ def get_np_predicts(folder, filename, tile_list, tile_size=512, nm_p=221):
         count += 1
         # if count > 15 : break
 
-def count_predicts(folder, filename, tile_size=512, nm_p=221):
-    wsi_path = os.path.join(folder, filename + '.ndpi')
+def count_predicts(folder, filename, format, tile_size=512, nm_p=221):
+    wsi_path = os.path.join(folder, filename + '.' + format)
 
     predict_xml_path = os.path.join(folder, filename + '_predicts.xml')
 
     # Get annotation info in pixels & dereferenced
     predict_list, id_list = get_id_box_list(wsi_path, predict_xml_path, nm_p)
     return len(predict_list)
+
+def slideRead(wsi_path):
+    if wsi_path.endswith(".ndpi"):
+        slide = openslide.open_slide(wsi_path)
+    return slide
