@@ -451,7 +451,7 @@ class MainWindow(QMainWindow):
 
     def onAboutActionTriggered(self):
         msgBox = QMessageBox()
-        msgBox.setText("Version 1")
+        msgBox.setText("Version 2")
         msgBox.exec()
 
         
