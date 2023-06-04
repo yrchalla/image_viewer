@@ -3,6 +3,7 @@ import os, sys
 import zipfile
 import threading
 import time
+import xml.etree.ElementTree as ET
 
 if getattr(sys, 'frozen', False):
     # The application is running as a bundled executable
@@ -57,7 +58,7 @@ from PyQt6.QtGui import QAction
 from PyQt6.QtGui import QColor
 from PyQt6.QtCore import QSize
 from PyQt6.QtCore import QSettings
-from verification_dump import get_np_predicts, count_predicts
+from verification_dump import get_np_predicts, count_predicts, get_set
 
 
 class MainWindow(QMainWindow):
@@ -185,13 +186,9 @@ class MainWindow(QMainWindow):
         if not (os.path.isfile(self.folderPath)):
             self.folderPath = str(QFileDialog.getOpenFileName(self, "Select ndpi file", QDir.homePath())[0])
             settings.setValue("last_value", self.folderPath)
-        if not os.path.isfile(self.folderPath.split('.')[0]+"_fp.txt"):
-            with open(self.folderPath.split('.')[0]+"_fp.txt", 'w') as file:
-                pass
         # read into set
-        with open(self.folderPath.split('.')[0]+"_fp.txt", 'r') as file:
-            for line in file:
-                self.falsePositives.add(int(line.strip()))  # Remove newline character and add line to set
+        self.falsePositives = get_set(self.folderPath[:self.folderPath.rfind('\\')], self.folderPath.
+split('\\')[-1].split('.')[0])
 
 
 
@@ -378,25 +375,40 @@ split('\\')[-1].split('.')[0], self.tile_list, self.folderPath.split('\\')[-1].s
             self.res = int(text)
 
     def save(self):
-        open(self.folderPath.split('.')[0]+"_fp.txt", 'w').close()
-        # clear and write line by line
-        with open(self.folderPath.split('.')[0]+"_fp.txt", 'w') as file:
-            for line in self.falsePositives:
-                file.write(str(line) + '\n')  # Write line to file with a newline character
+        print("Saving:", self.falsePositives)
+        folder, filename = self.folderPath[:self.folderPath.rfind('\\')], self.folderPath.split('\\')[-1].split('.')[0]
+        xml_path = os.path.join(folder, filename + '_predicts.xml')
+        tree = ET.parse(xml_path)
+        root = tree.getroot()
+        for elem in root.iter():
+            # print(elem.tag)
+            if elem.tag == 'ndpviewstate':
+                # title = elem.find('title').text
+                # cx = int((int(elem.find('x').text) + X_Reference)/nm_p)
+                # cy = int((int(elem.find('y').text) + Y_Reference)/nm_p)
+                id = int(elem.get("id"))   # MOD
+                if (id) in self.falsePositives:
+                    print("FPing ", id)
+                    for child_elem in elem:
+                        if child_elem.tag == 'fp-tp':
+                            child_elem.text = 'fp'
+                else:
+                    for child_elem in elem:
+                        if child_elem.tag == 'fp-tp':
+                            child_elem.text = 'none'
+        
+        tree.write(xml_path)
+
+
     
     def onOpenActionTriggered(self):
         width = self.width()
         height = self.height()
         folderPath = str(QFileDialog.getOpenFileName(self, "Select ndpi file", QDir.homePath())[0])
         if folderPath:
-            self.falsePositives = set()
-            if not os.path.isfile(self.folderPath.split('.')[0]+"_fp.txt"):
-                with open(self.folderPath.split('.')[0]+"_fp.txt", 'w') as _:
-                    pass
-            # read into set
-            with open(self.folderPath.split('.')[0]+"_fp.txt", 'r') as file:
-                for line in file:
-                    self.falsePositives.add(int(line.strip()))  # Remove newline character and add line to set
+            self.falsePositives = get_set(self.folderPath[:self.folderPath.rfind('\\')], self.folderPath.
+split('\\')[-1].split('.')[0])
+
             self.setWindowTitle(folderPath)
             settings.setValue("last_value", folderPath)
             self.folderPath = folderPath

@@ -591,90 +591,6 @@ def get_id_box_list(wsi_path, xml_path, nm_p):
             id_list.append(id)  # MOD
     return box_list, id_list    # MOD
 
-# def get_np_predicts(folder, filename, tile_size=512, nm_p=221):
-
-#     wsi_path = os.path.join(folder, filename + '.ndpi')
-
-#     predict_xml_path = os.path.join(folder, filename + '_predicts.xml')
-
-#     # Get annotation info in pixels & dereferenced
-#     predict_list, id_list = get_id_box_list(wsi_path, predict_xml_path, nm_p)
-
-#     # get tile source
-
-#     # ts = large_image.getTileSource(wsi_path)
-#     slide = openslide.open_slide(wsi_path)
-#     # dims = slide.dimensions
-#     # print(dims)
-
-#     # initialize
-#     tp_count = 0
-#     count = 0
-
-#     # loop through the ground truth to get list of tile imgs
-#     tile_list = []
-
-#     # create folder if they don't exist
-
-#     # fp_folder = os.path.join(dump_folder, 'fps')
-#     # if not os.path.isdir(fp_folder):
-#     #     os.mkdir(fp_folder)
-#     # loop through the ground truth
-#     count = 0
-#     for pred in predict_list:
-#         tile_anote = []
-
-#         # print(gt)
-#         title = pred[0]
-#         # centre of annotation in pixels
-#         cx = int((pred[3]+pred[5])/2)  # int(gt[1])
-#         cy = int((pred[4]+pred[6])/2)  # int(gt[2])
-
-#         # breath in pixels
-
-#         breath = abs(pred[5]-pred[3])
-#         length = abs(pred[6]-pred[4])
-
-#         # centering the Groundtruth
-
-#         x1, y1 = tile_size/2, tile_size/2
-
-#         left = int(cx - x1)
-#         top = int(cy - y1)
-#         # print(left,top)
-
-#         # print(breath,length)
-#         tile_box = (left, top, left+tile_size, top + tile_size)
-#         # gt_box = (gt[3]-left, gt[4]-top, gt[5] - left ,gt[6] - top)
-#         # gt_box = (x1, y1, x1+breath, y1+length)
-#         # print(gt_box)
-
-#         tile_anote = update_SameTile_annotes(
-#             predict_list, tile_box, tile_anote)
-
-#         level = slide.get_best_level_for_downsample(1.0 / 40)
-#         im_roi = slide.read_region((left, top), level, (tile_size, tile_size))
-        
-#         # im_roi = im_roi.convert("RGB")
-
-#         # print(im_roi.shape)
-#         file = im_roi.convert('RGB')
-#         np_img = np.array(file)
-#         # print(np_img.shape)
-#         tile_box = (0, 0, tile_size, tile_size)
-#         # check anote is fp
-#         for k in range(len(tile_anote)):
-#             # draw the predict
-#             np_img = plot_one_box(
-#                 tile_anote[k], np_img, color=(0, 255, 0))
-#         # filepath = os.path.join(tp_folder,filename +'_{0}_{1}.tif'.format(title,count))
-#         # imsave(filepath,np_img)
-#         np_img = write_tile_title(
-#             np_img, title + '{0}'.format(count), color=(255, 255, 255))
-#         tile_list.append(np_img)
-#         count += 1
-#         # if count > 15 : break
-#     return tile_list, id_list
 
 def get_np_predicts(folder, filename, tile_list, format, tile_size=512, nm_p=221):
 
@@ -775,3 +691,25 @@ def slideRead(wsi_path):
     if wsi_path.endswith(".ndpi"):
         slide = openslide.open_slide(wsi_path)
     return slide
+
+def get_set(folder, filename):
+    xml_path = os.path.join(folder, filename + '_predicts.xml')
+    tree = ET.parse(xml_path)
+    root = tree.getroot()
+    ret = set()
+    # x1, y1, x2, y2 = 0, 0, 0, 0
+    # box_list = []
+    # id_list = []    # MOD
+    # X_Reference, Y_Reference = get_referance(wsi_path, nm_p)
+    for elem in root.iter():
+        # print(elem.tag)
+        if elem.tag == 'ndpviewstate':
+            # title = elem.find('title').text
+            # cx = int((int(elem.find('x').text) + X_Reference)/nm_p)
+            # cy = int((int(elem.find('y').text) + Y_Reference)/nm_p)
+            id = elem.get("id")   # MOD
+            fp_tp = elem.find('fp-tp').text
+            if (fp_tp == 'fp'):
+                ret.add(int(id))
+    
+    return ret
