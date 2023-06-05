@@ -5,6 +5,8 @@ import threading
 import time
 import xml.etree.ElementTree as ET
 
+NM_P = 221
+
 if getattr(sys, 'frozen', False):
     # The application is running as a bundled executable
     current_dir = os.path.dirname(sys.executable)
@@ -196,7 +198,7 @@ split('\\')[-1].split('.')[0])
         # self.tile_list, self.id_list = get_np_predicts(self.folderPath[:self.folderPath.rfind('\\')], self.folderPath.split('\\')[-1].split('.')[0])
         self.tile_list = []
         thread = threading.Thread(target=get_np_predicts, args=(self.folderPath[:self.folderPath.rfind('\\')], self.folderPath.
-split('\\')[-1].split('.')[0], self.tile_list, self.folderPath.split('\\')[-1].split('.')[1]))
+split('\\')[-1].split('.')[0], self.tile_list, self.folderPath.split('\\')[-1].split('.')[1], self.tile_size))
         thread.start()
         # get_np_predicts(self.folderPath[:self.folderPath.rfind('\\')], self.folderPath.split('\\')[-1].split('.')[0], self.tile_list)
         self.numImages = count_predicts(self.folderPath[:self.folderPath.rfind('\\')], self.folderPath.split('\\')[-1].split('.')[0], self.folderPath.split('\\')[-1].split('.')[1])
@@ -323,8 +325,8 @@ split('\\')[-1].split('.')[0], self.tile_list, self.folderPath.split('\\')[-1].s
     def onSetRowsActionTriggered(self):
         width = self.width()
         height = self.height()
-        text, ok = QInputDialog.getText(self, "Input Dialog", "WARNING! The app will flip to the first page. Enter the row count:")
-        text0, ok0 = QInputDialog.getText(self, "Input Dialog", "WARNING! The app will flip to the first page. Enter the column count:")
+        text, ok = QInputDialog.getText(self, "Input Dialog", "Enter the row count:")
+        text0, ok0 = QInputDialog.getText(self, "Input Dialog", "Enter the column count:")
         if ok and text != '':
             self.nRows = int(text)
         if ok0 and text0 != '':
@@ -348,9 +350,9 @@ split('\\')[-1].split('.')[0], self.tile_list, self.folderPath.split('\\')[-1].s
     def onSetSizeActionTriggered(self):
         width = self.width()
         height = self.height()
-        text, ok = QInputDialog.getText(self, "Input Dialog", "WARNING! The app will flip to the first page. Enter value:")
+        text, ok = QInputDialog.getText(self, "Input Dialog", "Enter tile size in micrometers: ")
         if ok and text != '':
-            self.tile_size = int(text)
+            self.tile_size = int(text) * NM_P
             self.currPage = 0
             self.pageLabel.setText("Page " + str(self.currPage+1) + "/" + str(self.maxPage+1))
             child = self.gridLayout.takeAt(0)
@@ -363,7 +365,7 @@ split('\\')[-1].split('.')[0], self.tile_list, self.folderPath.split('\\')[-1].s
             self.tile_list = []
             # get_np_predicts(self.folderPath[:self.folderPath.rfind('\\')], self.folderPath.split('\\')[-1].split('.')[0], self.tile_list)
             thread = threading.Thread(target=get_np_predicts, args=(self.folderPath[:self.folderPath.rfind('\\')], self.folderPath.
-split('\\')[-1].split('.')[0], self.tile_list, self.folderPath.split('\\')[-1].split('.')[1]))
+split('\\')[-1].split('.')[0], self.tile_list, self.folderPath.split('\\')[-1].split('.')[1], self.tile_size))
             thread.start()
             time.sleep(1.5)
             self.displayImages(0, self.nRows * self.nCols - 1)
@@ -418,7 +420,7 @@ split('\\')[-1].split('.')[0])
             self.tile_list = []
             # get_np_predicts(self.folderPath[:self.folderPath.rfind('\\')], self.folderPath.split('\\')[-1].split('.')[0], self.tile_list)
             thread = threading.Thread(target=get_np_predicts, args=(self.folderPath[:self.folderPath.rfind('\\')], self.folderPath.
-split('\\')[-1].split('.')[0], self.tile_list, self.folderPath.split('\\')[-1].split('.')[1]))
+split('\\')[-1].split('.')[0], self.tile_list, self.folderPath.split('\\')[-1].split('.')[1], self.tile_size))
             thread.start()
             self.numImages = count_predicts(self.folderPath[:self.folderPath.rfind('\\')], self.folderPath.split('\\')[-1].split('.')[0], self.folderPath.split('\\')[-1].split('.')[1])
             self.maxPage = (self.numImages - 1) // (self.nRows * self.nCols)
@@ -493,7 +495,7 @@ split('\\')[-1].split('.')[0], self.tile_list, self.folderPath.split('\\')[-1].s
 
     def onAboutActionTriggered(self):
         msgBox = QMessageBox()
-        msgBox.setText("Version 2")
+        msgBox.setText("Version 3")
         msgBox.exec()
 
 
