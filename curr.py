@@ -5,6 +5,21 @@ import threading
 import time
 import xml.etree.ElementTree as ET
 
+
+openslide_formats = [
+    "svs",
+    "tif",
+    "vms",
+    "vmu",
+    "ndpi",
+    "scn",
+    "mrxs",
+    "tiff",
+    "svslide",
+    "bif",
+    "tif"
+]
+
 NM_P = 221
 
 if getattr(sys, 'frozen', False):
@@ -185,12 +200,22 @@ class MainWindow(QMainWindow):
 
         # Display the images in the specified folder
         self.folderPath = settings.value("last_value", "/")
-        if not (os.path.isfile(self.folderPath)):
-            self.folderPath = str(QFileDialog.getOpenFileName(self, "Select ndpi file", QDir.homePath())[0])
+        while not (os.path.isfile(self.folderPath) and self.folderPath.split('.')[-1] in openslide_formats):
+            self.folderPath = str(QFileDialog.getOpenFileName(self, "Select whole slide file", QDir.homePath())[0])
             settings.setValue("last_value", self.folderPath)
+            if not self.folderPath: break
+            if self.folderPath and not (os.path.isfile(self.folderPath) and self.folderPath.split('.')[-1] in openslide_formats):
+                msgBox = QMessageBox()
+                msgBox.setText("Improper file chosen")
+                msgBox.exec()
         # read into set
-        self.falsePositives = get_set(self.folderPath[:self.folderPath.rfind('\\')], self.folderPath.
-split('\\')[-1].split('.')[0])
+        try:
+            self.falsePositives = get_set(self.folderPath[:self.folderPath.rfind('\\')], self.folderPath.split('\\')[-1].split('.')[0])
+        except Exception as e:
+            settings.setValue("last_value", '')
+            msgBox = QMessageBox()
+            msgBox.setText(str(e))
+            msgBox.exec()
 
 
 
@@ -201,7 +226,12 @@ split('\\')[-1].split('.')[0])
 split('\\')[-1].split('.')[0], self.tile_list, self.folderPath.split('\\')[-1].split('.')[1], self.tile_size))
         thread.start()
         # get_np_predicts(self.folderPath[:self.folderPath.rfind('\\')], self.folderPath.split('\\')[-1].split('.')[0], self.tile_list)
-        self.numImages = count_predicts(self.folderPath[:self.folderPath.rfind('\\')], self.folderPath.split('\\')[-1].split('.')[0], self.folderPath.split('\\')[-1].split('.')[1])
+        try:
+            self.numImages = count_predicts(self.folderPath[:self.folderPath.rfind('\\')], self.folderPath.split('\\')[-1].split('.')[0], self.folderPath.split('\\')[-1].split('.')[1])
+        except Exception as e:
+            msgBox = QMessageBox()
+            msgBox.setText(str(e))
+            msgBox.exec()
         self.maxPage = (self.numImages - 1) // (self.nRows * self.nCols)
         # Create the label for the page number
         self.pageLabel.setText("Page " + str(self.currPage+1) + "/" + str(self.maxPage+1))
@@ -390,14 +420,27 @@ split('\\')[-1].split('.')[0], self.tile_list, self.folderPath.split('\\')[-1].s
                 # cy = int((int(elem.find('y').text) + Y_Reference)/nm_p)
                 id = int(elem.get("id"))   # MOD
                 if (id) in self.falsePositives:
-                    print("FPing ", id)
+                    # print("FPing ", id)
+                    has = False
                     for child_elem in elem:
                         if child_elem.tag == 'fp-tp':
+                            has = True
                             child_elem.text = 'fp'
+                    if not has:
+                        # If 'fp-tp' element doesn't exist, add it as a child element
+                        new_child_elem = ET.SubElement(elem, 'fp-tp')
+                        new_child_elem.text = 'fp'
+
                 else:
+                    has = False
                     for child_elem in elem:
                         if child_elem.tag == 'fp-tp':
+                            has = True
                             child_elem.text = 'none'
+                    if not has:
+                        # If 'fp-tp' element doesn't exist, add it as a child element
+                        new_child_elem = ET.SubElement(elem, 'fp-tp')
+                        new_child_elem.text = 'none'
         
         tree.write(xml_path)
 
@@ -406,14 +449,19 @@ split('\\')[-1].split('.')[0], self.tile_list, self.folderPath.split('\\')[-1].s
     def onOpenActionTriggered(self):
         width = self.width()
         height = self.height()
-        folderPath = str(QFileDialog.getOpenFileName(self, "Select ndpi file", QDir.homePath())[0])
-        if folderPath:
-            self.falsePositives = get_set(self.folderPath[:self.folderPath.rfind('\\')], self.folderPath.
-split('\\')[-1].split('.')[0])
+        folderPath = str(QFileDialog.getOpenFileName(self, "Select whole slide file", QDir.homePath())[0])
+        if folderPath and (os.path.isfile(folderPath) and folderPath.split('.')[-1] in openslide_formats):
+            self.folderPath = folderPath
+            try:
+                self.falsePositives = get_set(self.folderPath[:self.folderPath.rfind('\\')], self.folderPath.split('\\')[-1].split('.')[0])
+            except Exception as e:
+                settings.setValue("last_value", '')
+                msgBox = QMessageBox()
+                msgBox.setText(str(e))
+                msgBox.exec()
 
             self.setWindowTitle(folderPath)
             settings.setValue("last_value", folderPath)
-            self.folderPath = folderPath
             self.currPage = 0
             self.setWindowTitle(self.folderPath)
             # self.tile_list, self.id_list = get_np_predicts(self.folderPath[:self.folderPath.rfind('\\')], self.folderPath.split('\\')[-1].split('.')[0])
@@ -422,7 +470,12 @@ split('\\')[-1].split('.')[0])
             thread = threading.Thread(target=get_np_predicts, args=(self.folderPath[:self.folderPath.rfind('\\')], self.folderPath.
 split('\\')[-1].split('.')[0], self.tile_list, self.folderPath.split('\\')[-1].split('.')[1], self.tile_size))
             thread.start()
-            self.numImages = count_predicts(self.folderPath[:self.folderPath.rfind('\\')], self.folderPath.split('\\')[-1].split('.')[0], self.folderPath.split('\\')[-1].split('.')[1])
+            try:
+                self.numImages = count_predicts(self.folderPath[:self.folderPath.rfind('\\')], self.folderPath.split('\\')[-1].split('.')[0], self.folderPath.split('\\')[-1].split('.')[1])
+            except Exception as e:
+                msgBox = QMessageBox()
+                msgBox.setText(str(e))
+                msgBox.exec()
             self.maxPage = (self.numImages - 1) // (self.nRows * self.nCols)
             # Create the label for the page number
             self.pageLabel.setText("Page " + str(self.currPage+1) + "/" + str(self.maxPage+1))
@@ -436,6 +489,11 @@ split('\\')[-1].split('.')[0], self.tile_list, self.folderPath.split('\\')[-1].s
             time.sleep(1.5)
             self.displayImages(0, self.nRows * self.nCols - 1)
             self.resize(width, height)
+        else:
+            msgBox = QMessageBox()
+            msgBox.setText("Improper file chosen")
+            msgBox.exec()
+            
 
     def onResize(self, event):
         width = event.size().width()
@@ -495,7 +553,7 @@ split('\\')[-1].split('.')[0], self.tile_list, self.folderPath.split('\\')[-1].s
 
     def onAboutActionTriggered(self):
         msgBox = QMessageBox()
-        msgBox.setText("Version 3")
+        msgBox.setText("Version 4")
         msgBox.exec()
 
 

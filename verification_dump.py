@@ -1,39 +1,16 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Mon May  8 13:05:08 2023
-@author: Lucid
-"""
-# import os, sys
-# from lazy_import import lazy_module
-
-# if getattr(sys, 'frozen', False):
-#     # The application is running as a bundled executable
-#     current_dir = os.path.dirname(sys.executable)
-# else:
-#     # The application is running as a script
-#     current_dir = os.path.dirname(os.path.abspath(__file__))
-
-# OPENSLIDE_PATH = os.path.join(current_dir, 'openslide-win64-20230414', 'bin')
-# # if hasattr(os, 'add_dll_directory'):
-# #     # Python >= 3.8 on Windows
-# #     with os.add_dll_directory(OPENSLIDE_PATH):
-# #         openslide = lazy_module("openslide")
-# # else:
-# #     openslide = lazy_module("openslide")
-
-# os.add_dll_directory(OPENSLIDE_PATH)
-# # openslide = lazy_module("openslide")
-# import openslide
-
-# ET =lazy_module("xml.etree.ElementTree")
-# large_image = lazy_module("large_image")
-# np = lazy_module("numpy")
-# random = lazy_module("random")
-# plt = lazy_module("matplotlib.pyplot")
-# cv2 = lazy_module("cv2")
-# pd = lazy_module("pandas")
-# imsave = lazy_module("tifffile.imsave")
-# from defect_tile_cut import get_lnb, update_SameTile_annotations, tile_intersection
+openslide_formats = [
+    "svs",
+    "tif",
+    "vms",
+    "vmu",
+    "ndpi",
+    "scn",
+    "mrxs",
+    "tiff",
+    "svslide",
+    "bif",
+    "tif"
+]
 
 import os, sys, time
 
@@ -688,9 +665,14 @@ def count_predicts(folder, filename, format, tile_size=512, nm_p=221):
     return len(predict_list)
 
 def slideRead(wsi_path):
-    if wsi_path.endswith(".ndpi"):
-        slide = openslide.open_slide(wsi_path)
-    return slide
+    if wsi_path.split('.')[-1] in openslide_formats:
+        try:
+            slide = openslide.open_slide(wsi_path)
+            return slide
+        except openslide.OpenSlideError as e:
+            raise Exception("Error: Failed to open slide.") from e
+    else:
+        raise ValueError("Unsupported slide format.")
 
 def get_set(folder, filename):
     xml_path = os.path.join(folder, filename + '_predicts.xml')
@@ -708,7 +690,8 @@ def get_set(folder, filename):
             # cx = int((int(elem.find('x').text) + X_Reference)/nm_p)
             # cy = int((int(elem.find('y').text) + Y_Reference)/nm_p)
             id = elem.get("id")   # MOD
-            fp_tp = elem.find('fp-tp').text
+            fp_tp = elem.find('fp-tp').text if elem.find('fp-tp') != None else 'none' 
+            # fp_tp = elem.find('fp-tp').text
             if (fp_tp == 'fp'):
                 ret.add(int(id))
     
